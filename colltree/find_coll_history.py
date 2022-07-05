@@ -318,13 +318,13 @@ def calc_coll_all(base_dir,fdir,coll,cparam,minemb):
     Inputs:
     base_dir = directory where runs are
     fdir = directory of simulation
-    cparam = collision size to do collhist for
+    cparam = collision size to do collhist for. Options are: 'giant','small', or 'all'.
     coll = table of all giant collisions 
     minemb = minimum embryo mass
     
     Outputs:
-    pcoll = 
-    scoll = """
+    pcoll = table of all giant collision histories
+    scoll = table of all small collision histories"""
     
     print(fdir)
 
@@ -411,7 +411,7 @@ def calc_coll_all(base_dir,fdir,coll,cparam,minemb):
                     pcoll.add_row([p,fdir,dloss,ecc,inc,slope,time,a,0,p,mass,0,0,0,0,0,
                         0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0])
                 elif len(master_ids) != lm:
-                    print('pcoll same length but not master_ids')
+                    print('Error: pcoll same length but not master_ids')
                     print(lm,len(master_ids))
                     print(lp,len(pcoll))
                     print(master_ids[lm-1])
@@ -427,4 +427,61 @@ def calc_coll_all(base_dir,fdir,coll,cparam,minemb):
 
     return(pcoll,scoll)
 
-
+def get_collhist(base_dir,dir_tab,vtab,cparam,minemb,fname,fname_s,ovw):
+    """Calls calc_coll_all for dirs. Creates and writes a table for small collisions and giant collisions.
+        
+        Input:
+        base_dir = directory where data is
+        dir_tab = table of directory names and parameters that you want your table generated from
+        vtab = table of all giant collisions
+        cparam = collision size to do collhist for. Options are: 'giant','small', or 'all'
+        minemb = minimum embryo mass. Options are 'embryo' or the minimum embryo mass you want.
+        fname = name for giant collision history table
+        fname_s = name for small collision history table
+        ovw = if True, overwrite any existing files of that name
+        
+        Output:
+        collhist = giant collision history table
+        collhist_small = small collision history table"""
+    
+    collhist = Table(names=('pid','dir','dloss','ecc','inc','slope','time','a','iac','iap','tmass','CMFt','CMFt_min','il','ilp','pmass','CMFp','CMFp_min',
+                        'itype','iLR','LRMass','CMFLR','CMFLR_min','iSLR','SLRMass','CMFSLR','CMFSLR_min','inew','ideb','mdeb',
+                            'id1','id2','ctype','gamma','b','bcrit','vesc','vimp','vescalpha','veros','vcat','vsup','vhr','reveros','revsup'),
+                    dtype=('int64','U100','U12','U12','U12','U12','float64','float64','int64','int64','float64','float64','float64',
+                           'int64','int64','float64','float64','float64','int64','int64','float64','float64','float64','int64','float64','float64','float64','int64',
+                           'int64','float64','int64','int64','int64','float64','float64','float64','float64','float64','float64','float64','float64',
+                           'float64','float64','float64','float64'))
+    
+    collhist_small = Table(names=('pid','dir','dloss','ecc','inc','slope','time','a','iac','iap','tmass','CMFt','CMFt_min',
+                                  'il','ilp','pmass','CMFp','CMFp_min','itype','iLR','LRMass','CMFLR','CMFLR_min',
+                                  'iSLR','SLRMass','CMFSLR','inew','ideb','mdeb','origin_time','origin_id'),
+                    dtype=('int64','U100','U12','U12','U12','U12','float64','float64','int64','int64','float64','float64',
+                           'float64','int64','int64','float64','float64','float64','int64','int64','float64','float64',
+                           'float64','int64','float64','float64','int64','int64','float64','float64','int64'))
+    
+    
+    for i in range (0,len(dir_tab)):
+        #iterate through directories in the table
+        dmask = vtab['dir'] == dir_tab['dirs'][i] #get velocity table for that run
+        pcoll, scoll = calc_coll_all(base_dir,dir_tab['dirs'][i],vtab[dmask],cparam,minemb)
+        collhist = vstack([collhist,pcoll])
+        
+        #add columns with init params from dir_tab
+        dirs_c = Column([dir_tab['dirs'][i]]*len(scoll))
+        dloss = Column([dir_tab['dloss'][i]]*len(scoll))
+        ecc = Column([dir_tab['ecc'][i]]*len(scoll))
+        inc = Column([dir_tab['inc'][i]]*len(scoll))
+        slope =Column([dir_tab['slope'][i]]*len(scoll))
+        scoll.add_column(dirs_c,name='dir',index=1)
+        scoll.add_column(dloss,name='dloss',index=2)
+        scoll.add_column(ecc,name='ecc',index=3)
+        scoll.add_column(inc,name='inc',index=4)
+        scoll.add_column(slope,name='slope',index=5)
+        collhist_small = vstack([collhist_small,scoll])
+    
+    if cparam == 'giant' or cparam == 'all':
+        collhist.write(base_dir+fname,format='ascii.csv',overwrite=ovw)
+    if cparam == 'small' or cparam == 'all':
+        collhist_small.write(base_dir+fname_s,format='ascii.csv',overwrite=ovw)
+    
+    return(collhist,collhist_small)
