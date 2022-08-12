@@ -5,6 +5,7 @@ from tqdm import tqdm_notebook as tqdm
 import astropy.units as u
 import astropy.constants as c
 import astropy.io
+import util
 
 #set constants
 au = 1.495978707e8 #in km
@@ -27,7 +28,7 @@ def colls_per_planet(base_dir,collhist,good_dirs,sparam,minemb):
     if sparam == 'giant':
         #set up table to tally number of each collision type
         numcoll_tot = Table(names=('dirs','pid','c1','c2','c3','c4','c5','c6','c7','c8','c9','tot_giant',
-                                   'mass','a','e','inc','cmfm','cmf','cmf_av','ecc_init',
+                                   'mass','a','e','inc','cmf_max','cmf_min','cmf_av','ecc_init',
                                    'dloss','inc_init','slope'),
                     dtype=('U32','int32','int32','int32','int32','int32','int32','int32','int32','int32',
                'int32','int32','float32','float32','float32','float32','float32','float32',
@@ -36,7 +37,7 @@ def colls_per_planet(base_dir,collhist,good_dirs,sparam,minemb):
     
     elif sparam == 'small':
         #set up table
-        numcoll_tot = Table(names=('dirs','pid','tot_small','mass','a','e','inc','cmfm','cmf','cmf_av',
+        numcoll_tot = Table(names=('dirs','pid','tot_small','mass','a','e','inc','cmf_max','cmf_min','cmf_av',
                                    'reacc','supercat','other','m_reacc','m_super','m_other','mcore_min',
                                    'mcore_max','mdebris','ecc_init','dloss','inc_init','slope'),
                             dtype=('U32','int32','int32','float32','float32','float32','float32',
@@ -59,36 +60,7 @@ def colls_per_planet(base_dir,collhist,good_dirs,sparam,minemb):
         coll = group.group_by('pid')
 
         #read in pl file for that directory to match final planet info to pid
-        try:
-            comp = Table.read(base_dir+key['dir']+'/pl.maxcorecompositions-nograzefa',
-                              format='ascii.no_header',
-                      names=('time','iinit','a','e','inc','mass','inew','mcore','mmant','mtot'))
-        except:
-            comp = Table.read(base_dir+key['dir']+'/pl.maxcorecompositions-nograzefa',
-                              format='ascii.no_header',
-                              names=('time','iinit','mass','inew','mcore','mmant','mtot'))
-                
-            fol = Table.read(base_dir+key['dir']+'/follow.all',format='ascii.no_header',
-                                               names=('time','iinit','a','e','inc','mass'))
-            comp['a'] = fol['a']
-            comp['e'] = fol['e']
-            comp['inc'] = fol['inc']
-        try:
-            comp_min = Table.read(base_dir+key['dir']+'/pl.mincorecompositions-nograzefa',
-                                  format='ascii.no_header',
-                                names=('time','iinit','a','e','inc','mass','inew','mcore','mmant','mtot'))
-        except:
-            comp_min = Table.read(base_dir+key['dir']+'/pl.mincorecompositions-nograzefa',
-                                  format='ascii.no_header',
-                                  names=('time','iinit','mass','inew','mcore','mmant','mtot'))
-
-        if len(comp['mcore']) != len(comp_min['mcore']):
-            print(key['dir'])
-            print('len of max and min is not the same')
-
-        comp['cmfm'] = comp['mcore']/comp['mtot']
-        comp['cmf'] = comp_min['mcore']/comp_min['mtot']
-        comp['cmf_av'] = (comp['cmfm']+comp['cmf'])/2
+        comp = util.read_comp(base_dir,key['dir'])
 
         mtiny = np.genfromtxt(base_dir+key['dir']+'/continue.in')
 
@@ -123,9 +95,9 @@ def colls_per_planet(base_dir,collhist,good_dirs,sparam,minemb):
                 e = -1
                 inc = -1
             else:
-                cmfm = planets[maskpid]['cmfm'][0]
-                cmf = planets[maskpid]['cmf'][0]
-                cmf_av = planets[maskpid]['cmf_av'][0]
+                cmfm = planets[maskpid]['cmf_max'][0]
+                cmf = planets[maskpid]['cmf_min'][0]
+                cmf_av = planets[maskpid]['cmf'][0]
                 mass = planets[maskpid]['mtot'][0]
                 a = planets[maskpid]['a'][0]
                 e = planets[maskpid]['e'][0]
@@ -199,15 +171,13 @@ def colls_per_planet(base_dir,collhist,good_dirs,sparam,minemb):
 
 
 def get_numcoll(base_dir,dirtable,cparam,minemb,numcoll_name,fwrite):
-    """gets collhist and numcoll tables for a specified set of runs
+    """gets numcoll table for a specified set of runs
         
         Input:
         base_dir = base directory where all runs can be found
         dirtable = csv file with directories to use
         cparam = what type of collisions to do (default = giant)
         minemb = minimum mass for planets. If you want all embryos, use 'embryo'
-        collhist_name = name of collhist file
-        collhist_name_s = name of small collhist file
         numcoll_name = name of numcoll file
         fwrite = if True, overwrites pre-existing files
         

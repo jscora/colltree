@@ -5,6 +5,7 @@ from tqdm import tqdm_notebook as tqdm
 import astropy.units as u
 import astropy.constants as c
 import astropy.io 
+import util
 
 #set constants
 au = 1.495978707e8 #in km
@@ -23,27 +24,8 @@ def get_vel(base_dir,fdir):
     colls'''
 
     #read in data
-    coll = Table.read(base_dir+fdir+'/follow.maxcorecollisions-nograzefa',format='ascii.no_header',
-                      names=('time','a','iac','iap','tmass','CMFt','il','ilp','pmass','CMFp','itype','iLR',
-                             'LRMass','CMFLR','iSLR','SLRMass','CMFSLR','inew','ideb','mdeb'))
-    collmin = Table.read(base_dir+fdir+'/follow.mincorecollisions-nograzefa',format='ascii.no_header',
-                      names=('time','a','iac','iap','tmass','CMFt','il','ilp','pmass','CMFp','itype','iLR',
-                             'LRMass','CMFLR','iSLR','SLRMass','CMFSLR','inew','ideb','mdeb'))
-
-    if len(coll) != len(collmin):
-        print('Error: collision tables not same length')
-        print(len(coll))
-        print(len(collmin))
-        print(fdir)
-        #exit code here
-
-    #combine min and max info into one table
-    coll['CMFt_min'] = collmin['CMFt'] 
-    coll['CMFp_min'] = collmin['CMFp']
-    coll['CMFLR_min'] = collmin['CMFLR']
-    coll['CMFSLR_min'] = collmin['CMFSLR']
-
-
+    coll = util.read_follow(base_dir,fdir)
+   
     #read in velocity data
     vel = Table.read(base_dir+fdir+'/important_velocities.out',format='ascii.no_header',
                  names=('id1','id2','ctype','gamma','b','bcrit','time','vesc','vimp','vescalpha','veros',
@@ -251,18 +233,9 @@ def get_small_coll(base_dir,dirn,scoll,emb_list,mtiny,p):
     scoll = table of collision data """
     
     #read in collision info
-    colls = Table.read(base_dir+dirn+'/follow.maxcorecollisions-nograzefa',format='ascii.no_header',
-                      names=('time','a','iac','iap','tmass','CMFt','il','ilp','pmass','CMFp','itype','iLR',
-                             'LRMass','CMFLR','iSLR','SLRMass','CMFSLR','inew','ideb','mdeb'))
-    colls_min = Table.read(base_dir+dirn+'/follow.mincorecollisions-nograzefa',format='ascii.no_header',
-                      names=('time','a','iac','iap','tmass','CMFt','il','ilp','pmass','CMFp','itype','iLR',
-                             'LRMass','CMFLR','iSLR','SLRMass','CMFSLR','inew','ideb','mdeb'))
-    #add min CMF to main coll table
-    colls.add_column(colls_min['CMFt'],name='CMFt_min',index=6)
-    colls.add_column(colls_min['CMFp'],name='CMFp_min',index=11)
-    colls.add_column(colls_min['CMFLR'],name='CMFLR_min',index=16)
+    colls = util.read_follow(base_dir,dirn)
 
-    #get table with only small collisions
+#get table with only small collisions
     maskm = colls['pmass'] < mtiny
     colls_small = colls[maskm]
     
@@ -353,11 +326,9 @@ def calc_coll_all(base_dir,fdir,coll,cparam,minemb):
                          'float64','int64','int64','float64','float64','int64','U24'))
 
     #read in comp file to get final planets
-    comp = Table.read(base_dir+fdir+'/pl.maxcorecompositions-nograzefa',format='ascii.no_header',
-                  names=('time','iinit','a','e','inc','mass','inew','mcore','mmant','mtot'))
-
+    comp = util.read_comp(base_dir,fdir)
+    
     print(len(coll))
-
 
     mtiny = np.genfromtxt(base_dir+fdir+'/continue.in')
 
@@ -429,13 +400,13 @@ def calc_coll_all(base_dir,fdir,coll,cparam,minemb):
 
     return(pcoll,scoll)
 
-def get_collhist(base_dir,dir_tab,vtab,cparam,minemb,fname,fname_s,ovw):
+def get_collhist(base_dir,dirtable,vtab_name,cparam,minemb,fname,fname_s,ovw):
     """Calls calc_coll_all for dirs. Creates and writes a table for small collisions and giant collisions.
         
         Input:
         base_dir = directory where data is
-        dir_tab = table of directory names and parameters that you want your table generated from
-        vtab = table of all giant collisions
+        dirtable = table of directory names and parameters that you want your table generated from
+        vtab_name = table of all giant collisions
         cparam = collision size to do collhist for. Options are: 'giant','small', or 'all'
         minemb = minimum embryo mass. Options are 'embryo' or the minimum embryo mass you want.
         fname = name for giant collision history table
@@ -460,8 +431,17 @@ def get_collhist(base_dir,dir_tab,vtab,cparam,minemb,fname,fname_s,ovw):
                     dtype=('int64','U100','U12','U12','U12','U12','float64','float64','int64','int64','float64','float64',
                            'float64','int64','int64','float64','float64','float64','int64','int64','float64','float64',
                            'float64','int64','float64','float64','int64','int64','float64','float64','int64'))
-    
-    
+
+    #read in table of directories and names
+    dir_tab = Table.read(base_dir+dirtable)
+
+    try:
+        #read in collision information table
+        vtab = Table.read(base_dir+vtab_name)
+    except:
+        #generate table if it doesn't exist already
+        vtab = get_allvel(base_dir,dir_tab,vtab_name,True)
+
     for i in range (0,len(dir_tab)):
         #iterate through directories in the table
         dmask = vtab['dir'] == dir_tab['dirs'][i] #get velocity table for that run
@@ -486,4 +466,9 @@ def get_collhist(base_dir,dir_tab,vtab,cparam,minemb,fname,fname_s,ovw):
     if cparam == 'small' or cparam == 'all':
         collhist_small.write(base_dir+fname_s,format='ascii.csv',overwrite=ovw)
     
-    return(collhist,collhist_small)
+    if cparam == 'all':
+        return(collhist,collhist_small)
+    elif cparam == 'giant':
+        return(collhist)
+    elif cparam == 'small':
+        return(collhist_small)
