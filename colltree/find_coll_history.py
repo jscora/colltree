@@ -1,6 +1,6 @@
 import numpy as np
 from astropy.table import vstack,Table,Column,setdiff,join
-#from tqdm import tqdm
+from tqdm import tqdm
 from tqdm import tqdm_notebook as tqdm
 import astropy.units as u
 import astropy.constants as c
@@ -31,9 +31,11 @@ def get_vel(base_dir,fdir):
                              'LRMass','CMFLR','iSLR','SLRMass','CMFSLR','inew','ideb','mdeb'))
 
     if len(coll) != len(collmin):
+        print('Error: collision tables not same length')
         print(len(coll))
         print(len(collmin))
         print(fdir)
+        #exit code here
 
     #combine min and max info into one table
     coll['CMFt_min'] = collmin['CMFt'] 
@@ -71,7 +73,7 @@ def get_allvel(base_dir,dir_tab,fname,ovw):
     ovw = True if you want to overwrite any pre-existing files with that name
     
     Output:
-    tot_colls'''
+    tot_colls = table with all collision data'''
 
     #define table
     tot_colls = Table(names=('dir','dloss','ecc','inc','slope','time','a','iac','iap','tmass','CMFt','CMFt_min','il','ilp','pmass','CMFp','CMFp_min','itype','iLR','LRMass','CMFLR','CMFLR_min','iSLR','SLRMass','CMFSLR','CMFSLR_min','inew','ideb','mdeb','id1','id2','ctype','gamma','b','bcrit','vesc','vimp','vescalpha','veros','vcat','vsup','vhr','reveros','revsup'),
@@ -105,47 +107,47 @@ def get_allvel(base_dir,dir_tab,fname,ovw):
 def iterate_clist(pcoll,clist,master_ids,new_ids,iname):
     """Iterate through collisions list and add to collision history if not duplicate
     Input:
-    pcoll: collision history table for this planet
-    clist: list of collisions to search through
-    master_ids: embryos that make up this planet
-    new_ids: new planet ids in this list 
-    iname: name of ids to add to new_ids
+    pcoll = collision history table for this planet
+    clist = list of collisions to search through
+    master_ids = embryos that make up this planet
+    new_ids = new planet ids in this list 
+    iname = name of ids to add to new_ids
 
     Output:
-    pcoll: updated version
-    new_ids: updated version"""
+    pcoll = updated version
+    new_ids = updated version"""
 
     #add in all collisions that are not already in the collision table
-            #add pid column
-            pid_col = Column(p*np.ones(len(clist)))
-            clist.add_column(pid_col, name='pid',index=0)
+    #add pid column
+    pid_col = Column(p*np.ones(len(clist)))
+    clist.add_column(pid_col, name='pid',index=0)
 
-            #iterate through collision list
-            for j in range(0,len(clist)):
-                #search through only collisions for this planet
-                maskp = pcoll['pid'] == p
-                mask_collpid = []
-                for r in pcoll[maskp]:
-                    mask_row = []
-                    for keys in pcoll.keys():
-                        mask_row += [r[keys] == clist[keys][j]]
-                    mask_collpid += [np.prod(mask_row)]
-                duplicate = np.sum(mask_collpid)
+    #iterate through collision list
+    for j in range(0,len(clist)):
+        #search through only collisions for this planet
+        maskp = pcoll['pid'] == p
+        mask_collpid = []
+        for r in pcoll[maskp]:
+            mask_row = []
+            for keys in pcoll.keys():
+                mask_row += [r[keys] == clist[keys][j]]
+            mask_collpid += [np.prod(mask_row)]
+        duplicate = np.sum(mask_collpid)
 
-                if not duplicate: #if the collision is not already in the history
-                    maskt = pcoll['time'] == clist[j]['time']
-                    pcoll.add_row(clist[j]) #add to pcoll
+        if not duplicate: #if the collision is not already in the history
+            maskt = pcoll['time'] == clist[j]['time']
+            pcoll.add_row(clist[j]) #add to pcoll
 
-                    if clist['itype'][j] == 4 or clist['itype'][j] >= 8:
-                        #add in new ids, otherwise don't care about other id coll history
-                        #if the secondary id is new, add to list
-                        if clist[iname][j] not in master_ids['id']:
-                            new_ids.add_row([clist[iname][j],clist['time'][j]])
-                        #if secondary id has later time, add to list
-                        else:
-                            mask_master = master_ids['id'] == clist[iname][j]
-                            if master_ids[mask_master]['time'] < clist['time'][j]:
-                                new_ids.add_row([clist[iname][j],clist['time'][j]])
+            if clist['itype'][j] == 4 or clist['itype'][j] >= 8:
+                #add in new ids, otherwise don't care about other id coll history
+                #if the secondary id is new, add to list
+                if clist[iname][j] not in master_ids['id']:
+                    new_ids.add_row([clist[iname][j],clist['time'][j]])
+                #if secondary id has later time, add to list
+                else:
+                    mask_master = master_ids['id'] == clist[iname][j]
+                    if master_ids[mask_master]['time'] < clist['time'][j]:
+                        new_ids.add_row([clist[iname][j],clist['time'][j]])
     return(pcoll,new_ids)
 
 
@@ -153,14 +155,14 @@ def iterate_clist(pcoll,clist,master_ids,new_ids,iname):
 def find_prev_coll(pcoll,ids,master_ids,collnew,p):
     """Function that finds previous collisions for a given list of planet ids.
     Inputs:
-    pcoll: the table of collisions that are already in the collision history table
-    ids: table of ids and their collision times to find previous collisions for
-    master_ids: table of ids that already have previous collisions found
-    collnew: list of collisions for the whole run
-    p: the final planet id
+    pcoll = the table of collisions that are already in the collision history table
+    ids = table of ids and their collision times to find previous collisions for
+    master_ids = table of ids that already have previous collisions found
+    collnew = list of collisions for the whole run
+    p = the final planet id
 
     Output:
-    pcoll: updated version of the pcoll table"""
+    pcoll = updated version of the pcoll table"""
 
 
     #table to put in ids that need to find previous collisions for
@@ -238,15 +240,15 @@ def get_small_coll(base_dir,dirn,scoll,emb_list,mtiny,p):
     """Get the number of small collisions that occur over a planet's formation
 
     Input:
-    base_dir: directory that folders are in
-    dirn: folder name for this run
-    scoll: table of the small collisions that happen to the planet
-    emb_list: a table of the embryo ids that make up a planet's history, and time they entered that history
-    mtiny: minimum embryo mass
-    p: planet id
+    base_dir = directory that folders are in
+    dirn = folder name for this run
+    scoll = table of the small collisions that happen to the planet
+    emb_list = a table of the embryo ids that make up a planet's history, and time they entered that history
+    mtiny = minimum embryo mass
+    p = planet id
 
     Output:
-    scoll"""
+    scoll = table of collision data """
     
     #read in collision info
     colls = Table.read(base_dir+dirn+'/follow.maxcorecollisions-nograzefa',format='ascii.no_header',

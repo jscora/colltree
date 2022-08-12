@@ -1,6 +1,6 @@
 import numpy as np
 from astropy.table import vstack,Table,Column,setdiff,join
-#from tqdm import tqdm
+from tqdm import tqdm
 from tqdm import tqdm_notebook as tqdm
 import astropy.units as u
 import astropy.constants as c
@@ -212,7 +212,7 @@ def get_numcoll(base_dir,dirtable,cparam,minemb,numcoll_name,fwrite):
         fwrite = if True, overwrites pre-existing files
         
         Output:
-        collhists, numcoll"""
+        numcoll = table of collision stats"""
     
     dirs = Table.read(base_dir+dirtable)
     
