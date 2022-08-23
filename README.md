@@ -2,20 +2,20 @@
 
 colltree is a code that takes collision information from an N-body code with imperfect collisions and generates a collision history tree for each planet and creates an interactive dashboard to display these collision histories and overall collision statistics from all of the simulated runs.
 
-# Features
+## Features
 - generates a .csv table with collision history information for all planets, one with some basic statistics on the collisions in each simulation (i.e. numbers of each type of collision), and a table for a specific planet's collision tree
 - generates an interactive dashboard that plots the final planets in all simulations and will plot out the collision history tree and histogram of any planet once clicked on
 
-# Installation
+## Installation
 
 
 
-# Usage
+## Usage
 
 The code is set up so that everything can be run from the Jupyter notebook `interactive-collisions.ipynb` inside of Jupyter lab. 
 
 
-## Important note: Input files
+### Important note: Input files
 
 This code reads in Fortran-generated text input files with spaces as dividers. The input files required are based off of the output files generated from the version of SyMBA (Duncan et al 1998) with imperfect collisions (Scora et al 2020). 
 
