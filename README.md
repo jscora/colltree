@@ -1,14 +1,20 @@
 # colltree
 
-colltree is a code that takes collision information from an N-body code with imperfect collisions and generates a collision history tree for each planet and creates an interactive dashboard to display these collision histories and overall collision statistics from all of the simulated runs.
+colltree is a package that helps you better visualize the formation histories of planets in N-body simulations with imperfect collisions. It takes output files from the simulation and generates a collision history tree for each planet, then creates an interactive dashboard to display both these individual collision histories and the overall collision statistics from all of the simulated runs. colltree is built to run with the 9 collision types used in SyMBA, but can be altered for codes with different numbers of collision types.
 
 ## Features
-- generates a .csv table with collision history information for all planets, one with some basic statistics on the collisions in each simulation (i.e. numbers of each type of collision), and a table for a specific planet's collision tree
-- generates an interactive dashboard that plots the final planets in all simulations and will plot out the collision history tree and histogram of any planet once clicked on
+- an interactive dashboard that plots the collision statistics of the final planets in all simulations and will plot out the collision history tree and histogram of any planet once clicked on
+- creates a .csv table with collision history information for all planets
+- creates a .csv table with some basic statistics on the collisions in each simulation (i.e. numbers of each type of collision)
+- generates a table for each specific planet's collision tree on demand
 
 ## Installation
 
+I recommend using: 
 
+`pip install colltree`
+
+You can also clone the repository and run `python setup.py install`.
 
 ## Usage
 
