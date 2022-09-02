@@ -14,7 +14,6 @@ I recommend using:
 
 `pip install colltree`
 
-You can also clone the repository and run `python setup.py install`.
 
 ## Usage
 
@@ -30,7 +29,7 @@ The functions to read in the input files are all in util.py, and can be modified
 The input files needed are:
 - impact information for each simulation (impact velocity/escape velocity and impact angle at minimum)
 - collision information for each simulation (time of collision, collision type, and masses of both initial and final bodies)
-- output dumps for each simulation (time of dump, mass, semi-major axis, eccentrity and inclination of embryos and debris (if included in simulation) that exist at that time)
+- output dumps for each simulation (time of dump, mass, semi-major axis, eccentrity and inclination of embryos and debris, if included in simulation, that exist at that time)
 - input parameter file with minimum embryo mass (if no specific minimum embryo mass is input)
 
 Example files for each of the above-mentioned files are included in the `examples` directory. Core-mass fractions (CMFs) are included throughout the code, and required for these output files as well. If this information is not required for your analysis, then you can include columns of zeros for the relevant CMF columns and remove CMF from the plotting options. 
