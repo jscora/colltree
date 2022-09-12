@@ -1,6 +1,6 @@
 import numpy as np
 from astropy.table import vstack,Table,Column,setdiff,join
-from tqdm import tqdm
+#from tqdm import tqdm
 from tqdm import tqdm_notebook as tqdm
 import astropy.units as u
 import astropy.constants as c
@@ -60,7 +60,7 @@ def colls_per_planet(base_dir,collhist,good_dirs,sparam,minemb):
         coll = group.group_by('pid')
 
         #read in pl file for that directory to match final planet info to pid
-        comp = util.read_comp(base_dir,key['dir'])
+        comp = util.read_comp(base_dir,key['dir'],'astropy')
 
         mtiny = np.genfromtxt(base_dir+key['dir']+'/continue.in')
 
@@ -78,7 +78,7 @@ def colls_per_planet(base_dir,collhist,good_dirs,sparam,minemb):
         planets = planets[maskm]
         
         if len(planets)==0:
-            print('error in pl.maxcorecompositions stuff')
+            raise Exception('no final planets found')
 
         for key, group in zip(coll.groups.keys, coll.groups):
         
@@ -190,4 +190,4 @@ def get_numcoll(base_dir,dirtable,cparam,minemb,numcoll_name,fwrite):
     if fwrite:
         numcoll.write(base_dir+numcoll_name,format='ascii.csv',overwrite=True)
 
-return(numcoll)
+    return(numcoll)

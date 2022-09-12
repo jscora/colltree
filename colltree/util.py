@@ -1,27 +1,38 @@
-#set constants
-au = 1.495978707e8 #in km
-munit = 5.0428958e31 #in grams
-mearth = 5.972e24*1e3 #in g
-msol = 1.989e30*1e3 #in g
+import pandas as pd
+from astropy.table import Table
 
 def munit_to_mearth(x):
-    munit = 5.0428958e31 #in grams
+    munit = 5.0428958e31 #in g
+    mearth = 5.972e24*1e3 #in g
     """Function that converts code units to earth masses"""
     return(x*munit/mearth)
 
-def read_comp(base_dir,pdir,fname_min='pl.mincorecompositions-nograzefa',fname_max='pl.maxcorecompositions-nograzefa'):
+def read_comp(base_dir,pdir,tabtype,fname_min='pl.mincorecompositions-nograzefa',fname_max='pl.maxcorecompositions-nograzefa'):
     """Reads in output files for one simulation"""
 
-    try:
-        comp = pd.read_csv(base_dir+pdir+fname_max,
+    if tabtype == 'pandas':
+        try:
+            comp = pd.read_csv(base_dir+pdir+fname_max,
                         names=('time','iinit','a','e','inc','mass','inew','mcore','mmant','mtot'),
                         delim_whitespace=True)
-        comp_min = pd.read_csv(base_dir+pdir+fname_min,
+            comp_min = pd.read_csv(base_dir+pdir+fname_min,
                         names=('time','iinit','a','e','inc','mass','inew','mcore','mmant','mtot'),
                         delim_whitespace=True)
-    except:
-        print('cannot open files from: ',base_dir+pdir)
-        
+        except:
+            print('cannot open files from: ',base_dir+pdir)
+    
+    elif tabtype == 'astropy':
+        try:
+            comp = Table.read(base_dir+pdir+fname_max,format='ascii.no_header',
+                        names=('time','iinit','a','e','inc','mass','inew','mcore','mmant','mtot'))
+            comp_min = Table.read(base_dir+pdir+fname_min,format='ascii.no_header',
+                        names=('time','iinit','a','e','inc','mass','inew','mcore','mmant','mtot'))
+        except:
+            print('cannot open files from: ',base_dir+pdir)
+
+    else:
+        raise Exception("Incorrect tabtype is specified. Acccepted values are 'pandas' or 'astropy'")
+
     #combine comp_min and comp so there is an average CMF, min CMF and max CMF
     if len(comp) != len(comp_min):
         raise Exception('output files are not the same length. Min file is {0} and max file is {1}'.format(len(comp_min),len(comp)))
@@ -45,7 +56,7 @@ def read_follow(base_dir,pdir,fname_min='follow.mincorecollisions-nograzefa',fna
         print('Could not open files in directory ',base_dir+pdir)
 
     if len(coll) != len(collmin):
-        raise Exception('Error: collision tables not same length for directory: ',pdir)
+        raise Exception('Error: collision tables     not same length for directory: ',pdir)
 
     #combine min and max info into one table
     coll['CMFt_min'] = collmin['CMFt']

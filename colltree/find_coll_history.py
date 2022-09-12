@@ -326,7 +326,7 @@ def calc_coll_all(base_dir,fdir,coll,cparam,minemb):
                          'float64','int64','int64','float64','float64','int64','U24'))
 
     #read in comp file to get final planets
-    comp = util.read_comp(base_dir,fdir)
+    comp = util.read_comp(base_dir,fdir,'astropy')
     
     print(len(coll))
 
