@@ -10,9 +10,7 @@ colltree is a package that helps you better visualize the formation histories of
 
 ## Installation
 
-I recommend using: 
-
-`pip install colltree`
+You can download the source code from github and run `python setup.py` in the directory. 
 
 
 ## Usage
