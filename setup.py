@@ -9,7 +9,7 @@ with open(path.join(here, 'README.md'), encoding='utf-8') as f:
 
 setuptools.setup(
         name="colltree",
-        version="0.0.1",
+        version="0.1",
         author="Jennifer Scora",
         author_email="jennifer.scora@mail.utoronto.ca",
         description="A package to find the collision history and interactively plot it",
