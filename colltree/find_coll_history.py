@@ -32,7 +32,7 @@ def get_vel(base_dir,fdir):
                        'vcat','vsup','vhr','reveros','revsup'))
 
     #match up velocity info with collision info
-    vround = np.vectorize(fround)
+    vround = np.vectorize(util.fround)
     vel['time'] = vround(vel['time'])
     tab = join(coll,vel,keys=['time'],join_type='left')
 

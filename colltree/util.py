@@ -65,3 +65,25 @@ def read_follow(base_dir,pdir,fname_min='follow.mincorecollisions-nograzefa',fna
     coll['CMFSLR_min'] = collmin['CMFSLR']
 
     return(coll)
+
+def fround(x):
+    """Round values to signficant digits."""
+    if x < 1:
+        x = round(x,8)
+    elif x < 10:
+        x = round(x,7)
+    elif x < 100:
+        x = round(x,6)
+    elif x < 1000:
+        x = round(x,5)
+    elif x < 10000:
+        x = round(x,4)
+    elif x < 100000:
+        x = round(x,3)
+    elif x < 1000000:
+        x = round(x,2)
+    elif x < 10000000:
+        x = round(x,1)
+    elif x < 100000000:
+        x = round(x,0)
+    return(x)
