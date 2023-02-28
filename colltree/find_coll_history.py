@@ -13,12 +13,14 @@ munit = 5.0428958e31 #in grams
 mearth = 5.972e24*1e3 #in g
 msol = 1.989e30*1e3 #in g
 
-def get_vel(base_dir,fdir):
+def get_vel(base_dir,fdir,folname_min,folname_max):
     '''Get a table of giant collisions that combines info from follow.maxcorecollisions and important_velcoities.out
     
     Input:
     base_dir = directory where runs are
     fdir = run directory
+    folname_min = follow. file name
+    folname_max = follow. file name
     
     Output:
     colls'''
@@ -45,7 +47,7 @@ def get_vel(base_dir,fdir):
     return(colls)
 
 
-def get_allvel(base_dir,dir_tab,fname,ovw):
+def get_allvel(base_dir,dir_tab,fname,ovw,folname_min,folname_max):
     '''Get a table of giant collision info, including impact parameters, for a list of directories
     
     Input:
@@ -53,6 +55,8 @@ def get_allvel(base_dir,dir_tab,fname,ovw):
     dir_tab = table with runs to use
     fname = name of output file of giant collision info
     ovw = True if you want to overwrite any pre-existing files with that name
+    folname_min = name of follow. file
+    folname_max = name of follow. file
     
     Output:
     tot_colls = table with all collision data'''
@@ -63,7 +67,7 @@ def get_allvel(base_dir,dir_tab,fname,ovw):
                              'int32','int32','float32','int32','int32','int32','float32','float32','float32','float32','float32','float32','float32','float32','float32','float32','float32','float32'))
 
     for i in range (0,len(dir_tab['dirs'])):
-        colls = get_vel(base_dir,dir_tab['dirs'][i])
+        colls = get_vel(base_dir,dir_tab['dirs'][i],folname_min,folname_max)
 
         #add columns with init params
         dirs_c = Column([dir_tab['dirs'][i]]*len(colls))
@@ -288,7 +292,7 @@ def get_small_coll(base_dir,dirn,scoll,emb_list,mtiny,p):
     
     return(scoll)
 
-def calc_coll_all(base_dir,fdir,coll,cparam,minemb):
+def calc_coll_all(base_dir,fdir,coll,cparam,minemb,cname_min,cname_max):
     """Calculating collisional history for all final planets. Calls find_prev_coll
     Inputs:
     base_dir = directory where runs are
@@ -296,6 +300,8 @@ def calc_coll_all(base_dir,fdir,coll,cparam,minemb):
     cparam = collision size to do collhist for. Options are: 'giant','small', or 'all'.
     coll = table of all giant collisions 
     minemb = minimum embryo mass
+    cname_min = name of comp file
+    cname_max = name of comp file
     
     Outputs:
     pcoll = table of all giant collision histories
@@ -326,7 +332,7 @@ def calc_coll_all(base_dir,fdir,coll,cparam,minemb):
                          'float64','int64','int64','float64','float64','int64','U24'))
 
     #read in comp file to get final planets
-    comp = util.read_comp(base_dir,fdir,'astropy')
+    comp = util.read_comp(base_dir,fdir,'astropy',cname_min,cname_max)
     
     print(len(coll))
 
@@ -400,7 +406,7 @@ def calc_coll_all(base_dir,fdir,coll,cparam,minemb):
 
     return(pcoll,scoll)
 
-def get_collhist(base_dir,dirtable,vtab_name,cparam,minemb,fname,fname_s,ovw):
+def get_collhist(base_dir,dirtable,vtab_name,cparam,minemb,fname,fname_s,ovw,folname_min='follow.mincorecollisions-nograzefa',folname_max='follow.maxcorecollisions-nograzefa',cname_min='pl.mincorecompositions-nograzefa',cname_max='pl.maxcorecompositions-nograzefa'):
     """Calls calc_coll_all for dirs. Creates and writes a table for small collisions and giant collisions.
         
         Input:
@@ -412,6 +418,10 @@ def get_collhist(base_dir,dirtable,vtab_name,cparam,minemb,fname,fname_s,ovw):
         fname = name for giant collision history table
         fname_s = name for small collision history table
         ovw = if True, overwrite any existing files of that name
+        folname_min = name of follow. file, default value is follow.mincorecollisions-nograzefa
+        folname_max = name of follow. file, default value is follow.maxcorecollisions-nograzefa
+        cname_min = name of comp file, default value is pl.mincorecompositions-nograzefa
+        cname_max = name of comp file, default value is pl.maxcorecompositions-nograzefa
         
         Output:
         collhist = giant collision history table
@@ -440,12 +450,12 @@ def get_collhist(base_dir,dirtable,vtab_name,cparam,minemb,fname,fname_s,ovw):
         vtab = Table.read(base_dir+vtab_name)
     except:
         #generate table if it doesn't exist already
-        vtab = get_allvel(base_dir,dir_tab,vtab_name,True)
+        vtab = get_allvel(base_dir,dir_tab,vtab_name,True,folname_min,folname_max)
 
     for i in range (0,len(dir_tab)):
         #iterate through directories in the table
         dmask = vtab['dir'] == dir_tab['dirs'][i] #get velocity table for that run
-        pcoll, scoll = calc_coll_all(base_dir,dir_tab['dirs'][i],vtab[dmask],cparam,minemb)
+        pcoll, scoll = calc_coll_all(base_dir,dir_tab['dirs'][i],vtab[dmask],cparam,minemb,cname_min,cname_max)
         collhist = vstack([collhist,pcoll])
         
         #add columns with init params from dir_tab
