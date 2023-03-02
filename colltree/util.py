@@ -1,5 +1,6 @@
 import pandas as pd
 from astropy.table import Table
+import sys
 
 def munit_to_mearth(x):
     munit = 5.0428958e31 #in g
@@ -20,6 +21,7 @@ def read_comp(base_dir,pdir,tabtype,fname_min='pl.mincorecompositions-nograzefa'
                         delim_whitespace=True)
         except:
             print('cannot open files from: ',base_dir+pdir)
+            sys.exit(1)
     
     elif tabtype == 'astropy':
         try:
@@ -29,6 +31,7 @@ def read_comp(base_dir,pdir,tabtype,fname_min='pl.mincorecompositions-nograzefa'
                         names=('time','iinit','a','e','inc','mass','inew','mcore','mmant','mtot'))
         except:
             print('cannot open files from: ',base_dir+pdir)
+            sys.exit(1)
 
     else:
         raise Exception("Incorrect tabtype is specified. Acccepted values are 'pandas' or 'astropy'")
@@ -54,6 +57,7 @@ def read_follow(base_dir,pdir,fname_min='follow.mincorecollisions-nograzefa',fna
                              'LRMass','CMFLR','iSLR','SLRMass','CMFSLR','inew','ideb','mdeb'))
     except:
         print('Could not open files in directory ',base_dir+pdir)
+        sys.exit(1)
 
     if len(coll) != len(collmin):
         raise Exception('Error: collision tables     not same length for directory: ',pdir)

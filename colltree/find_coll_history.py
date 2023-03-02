@@ -5,6 +5,7 @@ from tqdm import tqdm_notebook as tqdm
 import astropy.units as u
 import astropy.constants as c
 import astropy.io 
+import sys
 import util
 
 #set constants
@@ -292,14 +293,16 @@ def get_small_coll(base_dir,dirn,scoll,emb_list,mtiny,p):
     
     return(scoll)
 
-def calc_coll_all(base_dir,fdir,coll,cparam,minemb,cname_min,cname_max):
-    """Calculating collisional history for all final planets. Calls find_prev_coll
+def calc_coll_all(base_dir,fdir,coll,cparam,minemb,nparam,pl_ids=None,cname_min,cname_max):
+    """Calculating collisional history for planets. Calls find_prev_coll
     Inputs:
     base_dir = directory where runs are
     fdir = directory of simulation
     cparam = collision size to do collhist for. Options are: 'giant','small', or 'all'.
     coll = table of all giant collisions 
     minemb = minimum embryo mass
+    nparam = possible values are 'all' or 'some'. If all, computes collision history for all final planets. If 'some', computes collision history for planets listed in pl_ids. 
+    pl_ids = ids of planets to find collision histories for. Default value is None
     cname_min = name of comp file
     cname_max = name of comp file
     
@@ -330,26 +333,32 @@ def calc_coll_all(base_dir,fdir,coll,cparam,minemb,cname_min,cname_max):
                          'float64','int64','int64','float64','float64','float64','int64',
                          'int64','float64','float64','float64','int64','float64',
                          'float64','int64','int64','float64','float64','int64','U24'))
-
+    
     #read in comp file to get final planets
     comp = util.read_comp(base_dir,fdir,'astropy',cname_min,cname_max)
     
     print(len(coll))
 
     mtiny = np.genfromtxt(base_dir+fdir+'/continue.in')
+    
+    if nparam == 'all':
+        #make list of final planets
+        plnts = comp.group_by('time')
+        l = len(plnts.groups)
 
-    #make list of final planets
-    plnts = comp.group_by('time')
-    l = len(plnts.groups)
+        #planets here are all embryos above some min embryos mass
+        allplanets = plnts.groups[l-1]
+        if minemb == 'embryo':
+            maskmp = allplanets['mass'] > mtiny[2]*munit/mearth
+        else:
+            maskmp = allplanets['mass'] >= minemb
+        planets = allplanets[maskmp]
 
-    #planets here are all embryos above some min embryos mass
-    allplanets = plnts.groups[l-1]
-    if minemb == 'embryo':
-        maskmp = allplanets['mass'] > mtiny[2]*munit/mearth
-    else:
-        maskmp = allplanets['mass'] >= minemb
-    planets = allplanets[maskmp]
-
+    elif nparam == 'some':
+        if pl_ids == None:
+            raise Exception('Error: for plparam == some, you must have a planet id column in dirtable')
+            sys.exit(1)
+        planets['iinit'] = pl_ids #should this also have a time component? 
 
     for p in planets['iinit']:
 
@@ -406,8 +415,33 @@ def calc_coll_all(base_dir,fdir,coll,cparam,minemb,cname_min,cname_max):
 
     return(pcoll,scoll)
 
-def get_collhist(base_dir,dirtable,vtab_name,cparam,minemb,fname,fname_s,ovw,folname_min='follow.mincorecollisions-nograzefa',folname_max='follow.maxcorecollisions-nograzefa',cname_min='pl.mincorecompositions-nograzefa',cname_max='pl.maxcorecompositions-nograzefa'):
-    """Calls calc_coll_all for dirs. Creates and writes a table for small collisions and giant collisions.
+def add_param_cols(dir_tab,scoll):
+    """Adds in simulation or directory parameter columns to scoll.
+    Inputs: 
+    dir_tab = row of a table with directories and parameters for each directory to read in
+    scoll = table of small collision histories for a directory
+    
+    Outputs: 
+    scoll = updated with directory parameters"""
+    
+    dirs_c = Column([dir_tab['dirs']]*len(scoll))
+    dloss = Column([dir_tab['dloss']]*len(scoll))
+    ecc = Column([dir_tab['ecc']]*len(scoll))
+    inc = Column([dir_tab['inc']]*len(scoll))
+    slope =Column([dir_tab['slope']]*len(scoll))
+    scoll.add_column(dirs_c,name='dir',index=1)
+    scoll.add_column(dloss,name='dloss',index=2)
+    scoll.add_column(ecc,name='ecc',index=3)
+    scoll.add_column(inc,name='inc',index=4)
+    scoll.add_column(slope,name='slope',index=5)
+    return(scoll)
+    
+
+def get_collhist(base_dir,vtab_name,cparam,minemb,fname,fname_s,ovw,dirparam,plparam,dirtable,
+                 folname_min='follow.mincorecollisions-nograzefa',
+                 folname_max='follow.maxcorecollisions-nograzefa',
+                 cname_min='pl.mincorecompositions-nograzefa',cname_max='pl.maxcorecompositions-nograzefa'):
+    """Calls calc_coll_all for dirs in dirtable. Creates and writes a table for small collisions and giant collisions, depending on input.
         
         Input:
         base_dir = directory where data is
@@ -418,6 +452,8 @@ def get_collhist(base_dir,dirtable,vtab_name,cparam,minemb,fname,fname_s,ovw,fol
         fname = name for giant collision history table
         fname_s = name for small collision history table
         ovw = if True, overwrite any existing files of that name
+        dirparam = if 'all', do all directories and planets. if 'some', do a selection of directories and planets. If 'one', do only one directory. Planet ids must be in dirtable
+        plparam = if 'some', do a selection of planet ids. If 'one', do only one planet id. Planet ids must be in dirtable 
         folname_min = name of follow. file, default value is follow.mincorecollisions-nograzefa
         folname_max = name of follow. file, default value is follow.maxcorecollisions-nograzefa
         cname_min = name of comp file, default value is pl.mincorecompositions-nograzefa
@@ -442,34 +478,67 @@ def get_collhist(base_dir,dirtable,vtab_name,cparam,minemb,fname,fname_s,ovw,fol
                            'float64','int64','int64','float64','float64','float64','int64','int64','float64','float64',
                            'float64','int64','float64','float64','int64','int64','float64','float64','int64'))
 
-    #read in table of directories and names
-    dir_tab = Table.read(base_dir+dirtable)
-
+    
     try:
         #read in collision information table
         vtab = Table.read(base_dir+vtab_name)
     except:
         #generate table if it doesn't exist already
         vtab = get_allvel(base_dir,dir_tab,vtab_name,True,folname_min,folname_max)
-
-    for i in range (0,len(dir_tab)):
-        #iterate through directories in the table
-        dmask = vtab['dir'] == dir_tab['dirs'][i] #get velocity table for that run
-        pcoll, scoll = calc_coll_all(base_dir,dir_tab['dirs'][i],vtab[dmask],cparam,minemb,cname_min,cname_max)
-        collhist = vstack([collhist,pcoll])
         
-        #add columns with init params from dir_tab
-        dirs_c = Column([dir_tab['dirs'][i]]*len(scoll))
-        dloss = Column([dir_tab['dloss'][i]]*len(scoll))
-        ecc = Column([dir_tab['ecc'][i]]*len(scoll))
-        inc = Column([dir_tab['inc'][i]]*len(scoll))
-        slope =Column([dir_tab['slope'][i]]*len(scoll))
-        scoll.add_column(dirs_c,name='dir',index=1)
-        scoll.add_column(dloss,name='dloss',index=2)
-        scoll.add_column(ecc,name='ecc',index=3)
-        scoll.add_column(inc,name='inc',index=4)
-        scoll.add_column(slope,name='slope',index=5)
-        collhist_small = vstack([collhist_small,scoll])
+    
+    #read in table of directories and names
+    #do I group both of these tables, or do I just do two separate loops for each one?
+    dir_tab = Table.read(base_dir+dirtable)
+    
+    if plparam == 'some':
+        # add in a test to make sure there's an ids column, and exit with error if not?
+        dirgrouped = dir_tab.group_by('dirs')
+        
+    elif dirparam == 'one':
+        #only get collhist for one simulation or directory 
+        if plparam == 'one':
+            #get coll history for one planet 
+            pl_ids = [dirtable['iinit'][0]]
+            dmask = vtab['dir'] == dirtable['dirs'][0]
+            pcoll,scoll = calc_coll_all(base_dir,dirtable,vtab[dmask],cparam,minemb,'some',pl_ids,cname_min,cname_max)
+        elif plparam == 'some':
+            #get coll history for pl_ids
+            pl_ids = dirtable['iinit']
+            dmask = vtab['dir'] == dirtable['dirs'][0]
+            pcoll,scoll = calc_coll_all(base_dir,dirtable,vtab[dmask],cparam,minemb,'some',pl_ids,cname_min,cname_max)
+        elif plparam == 'all':
+            dmask = vtab['dir'] == dirtable
+            pcoll,scoll = calc_coll_all(base_dir,dirtable,vtab[dmask],cparam,minemb,'all',cname_min,cname_max)
+        
+    if dirparam == 'all':
+        for i in range (0,len(dir_tab)):
+            #iterate through directories in the table
+            dmask = vtab['dir'] == dir_tab['dirs'][i] #get velocity table for that run
+            pcoll, scoll = calc_coll_all(base_dir,dir_tab['dirs'][i],vtab[dmask],cparam,minemb,'all',cname_min,cname_max)
+            collhist = vstack([collhist,pcoll])
+        
+            if cparam == 'small' or cparam == 'all':
+                #add columns with init params from dir_tab
+                scoll = add_params_cols(dir_tab[i],scoll)
+                collhist_small = vstack([collhist_small,scoll])
+    
+    elif dirparam == 'some':
+        for key, group in zip(dirgrouped.groups.keys, dirgrouped.groups):
+            dmask = vtab['dir'] == key['dirs']
+            if plparam == 'some':
+                #call calc_coll_all for some
+                pl_ids = group['iinit']
+                pcoll, scoll = calc_coll_all(base_dir,key['dirs'],vtab[dmask],cparam,minemb,'some',pl_ids,cname_min,cname_max)
+            elif plparam == 'one':
+                pl_ids = group['iinit']
+                pcoll, scoll = calc_coll_all(base_dir,key['dirs'],vtab[dmask],cparam,minemb,'some',pl_ids,cname_min,cname_max)
+                
+            if cparam == 'small' or cparam == 'all':
+                #add columns with init params from dir_tab
+                scoll = add_params_cols(dir_tab[i],scoll)
+                collhist_small = vstack([collhist_small,scoll])
+            
     
     if cparam == 'giant' or cparam == 'all':
         collhist.write(base_dir+fname,format='ascii.csv',overwrite=ovw)
