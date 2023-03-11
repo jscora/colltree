@@ -13,10 +13,10 @@ def read_comp(base_dir,pdir,tabtype,fname_min='pl.mincorecompositions-nograzefa'
 
     if tabtype == 'pandas':
         try:
-            comp = pd.read_csv(base_dir+pdir+fname_max,
+            comp = pd.read_csv(base_dir+pdir+'/'+fname_max,
                         names=('time','iinit','a','e','inc','mass','inew','mcore','mmant','mtot'),
                         delim_whitespace=True)
-            comp_min = pd.read_csv(base_dir+pdir+fname_min,
+            comp_min = pd.read_csv(base_dir+pdir+'/'+fname_min,
                         names=('time','iinit','a','e','inc','mass','inew','mcore','mmant','mtot'),
                         delim_whitespace=True)
         except:
@@ -25,9 +25,9 @@ def read_comp(base_dir,pdir,tabtype,fname_min='pl.mincorecompositions-nograzefa'
     
     elif tabtype == 'astropy':
         try:
-            comp = Table.read(base_dir+pdir+fname_max,format='ascii.no_header',
+            comp = Table.read(base_dir+pdir+'/'+fname_max,format='ascii.no_header',
                         names=('time','iinit','a','e','inc','mass','inew','mcore','mmant','mtot'))
-            comp_min = Table.read(base_dir+pdir+fname_min,format='ascii.no_header',
+            comp_min = Table.read(base_dir+pdir+'/'+fname_min,format='ascii.no_header',
                         names=('time','iinit','a','e','inc','mass','inew','mcore','mmant','mtot'))
         except:
             print('cannot open files from: ',base_dir+pdir)
@@ -41,18 +41,17 @@ def read_comp(base_dir,pdir,tabtype,fname_min='pl.mincorecompositions-nograzefa'
         raise Exception('output files are not the same length. Min file is {0} and max file is {1}'.format(len(comp_min),len(comp)))
     
     comp['cmf_max'] = comp['mcore']/comp['mtot']
-    comp_min['cmf_min'] = comp_min['mcore']/comp_min['mtot']
-    comp['cmf'] = (comp['cmf_max']+comp_min['cmf_min'])/2
-
+    comp['cmf_min'] = comp_min['mcore']/comp_min['mtot']
+    comp['cmf'] = (comp['cmf_max']+comp['cmf_min'])/2
     return(comp)
 
 def read_follow(base_dir,pdir,fname_min='follow.mincorecollisions-nograzefa',fname_max='follow.maxcorecollisions-nograzefa'):
     
     try:
-        coll = Table.read(base_dir+pdir+fname_max,format='ascii.no_header',
+        coll = Table.read(base_dir+pdir+'/'+fname_max,format='ascii.no_header',
                       names=('time','a','iac','iap','tmass','CMFt','il','ilp','pmass','CMFp','itype','iLR',
                              'LRMass','CMFLR','iSLR','SLRMass','CMFSLR','inew','ideb','mdeb'))
-        collmin = Table.read(base_dir+pdir+fname_min,format='ascii.no_header',
+        collmin = Table.read(base_dir+pdir+'/'+fname_min,format='ascii.no_header',
                       names=('time','a','iac','iap','tmass','CMFt','il','ilp','pmass','CMFp','itype','iLR',
                              'LRMass','CMFLR','iSLR','SLRMass','CMFSLR','inew','ideb','mdeb'))
     except:

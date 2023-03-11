@@ -6,7 +6,7 @@ import astropy.units as u
 import astropy.constants as c
 import astropy.io 
 import sys
-import util
+import colltree.util as util
 
 #set constants
 au = 1.495978707e8 #in km
@@ -27,7 +27,7 @@ def get_vel(base_dir,fdir,folname_min,folname_max):
     colls'''
 
     #read in data
-    coll = util.read_follow(base_dir,fdir)
+    coll = util.read_follow(base_dir,fdir,folname_min,folname_max)
    
     #read in velocity data
     vel = Table.read(base_dir+fdir+'/important_velocities.out',format='ascii.no_header',
@@ -64,19 +64,19 @@ def get_allvel(base_dir,dir_tab,fname,ovw,folname_min,folname_max):
 
     #define table
     tot_colls = Table(names=('dir','dloss','ecc','inc','slope','time','a','iac','iap','tmass','CMFt','CMFt_min','il','ilp','pmass','CMFp','CMFp_min','itype','iLR','LRMass','CMFLR','CMFLR_min','iSLR','SLRMass','CMFSLR','CMFSLR_min','inew','ideb','mdeb','id1','id2','ctype','gamma','b','bcrit','vesc','vimp','vescalpha','veros','vcat','vsup','vhr','reveros','revsup'),
-                      dtype=('U100','U12','U12','U12','U12','float32','float32','int32','int32','float32','float32','float32','int32','int32','float32','float32','float32','int32','int32','float32','float32','float32','int32','float32','float32','float32',
-                             'int32','int32','float32','int32','int32','int32','float32','float32','float32','float32','float32','float32','float32','float32','float32','float32','float32','float32'))
+                      dtype=('U100','U12','U12','U12','U12','float64','float64','int32','int32','float64','float64','float64','int32','int32','float64','float64','float64','int32','int32','float64','float64','float64','int32','float64','float64','float64',
+                             'int32','int32','float64','int32','int32','int32','float64','float64','float64','float64','float64','float64','float64','float64','float64','float64','float64','float64'))
 
-    for i in range (0,len(dir_tab['dirs'])):
-        colls = get_vel(base_dir,dir_tab['dirs'][i],folname_min,folname_max)
+    for i in range (0,len(dir_tab['dir'])):
+        colls = get_vel(base_dir,dir_tab['dir'][i],folname_min,folname_max)
 
         #add columns with init params
-        dirs_c = Column([dir_tab['dirs'][i]]*len(colls))
+        dir_c = Column([dir_tab['dir'][i]]*len(colls))
         dloss = Column([dir_tab['dloss'][i]]*len(colls))
-        ecc = Column([dir_tab['ecc'][i]]*len(colls))
-        inc = Column([dir_tab['inc'][i]]*len(colls))
+        ecc = Column([dir_tab['av_ecc'][i]]*len(colls))
+        inc = Column([dir_tab['av_inc'][i]]*len(colls))
         slope =Column([dir_tab['slope'][i]]*len(colls))
-        colls.add_column(dirs_c,name='dir',index=0)
+        colls.add_column(dir_c,name='dir',index=0)
         colls.add_column(dloss,name='dloss',index=1)
         colls.add_column(ecc,name='ecc',index=2)
         colls.add_column(inc,name='inc',index=3)
@@ -91,7 +91,7 @@ def get_allvel(base_dir,dir_tab,fname,ovw,folname_min,folname_max):
     return(tot_colls)
 
 
-def iterate_clist(pcoll,clist,master_ids,new_ids,iname):
+def iterate_clist(pcoll,clist,master_ids,new_ids,iname,p):
     """Iterate through collisions list and add to collision history if not duplicate
     Input:
     pcoll = collision history table for this planet
@@ -99,6 +99,7 @@ def iterate_clist(pcoll,clist,master_ids,new_ids,iname):
     master_ids = embryos that make up this planet
     new_ids = new planet ids in this list 
     iname = name of ids to add to new_ids
+    p = planet id
 
     Output:
     pcoll = updated version
@@ -170,11 +171,11 @@ def find_prev_coll(pcoll,ids,master_ids,collnew,p):
 
         if len(clist1) > 0:
 
-            pcoll, new_ids = iterate_clist(pcoll,clist1,master_ids,new_ids,'ilp')
+            pcoll, new_ids = iterate_clist(pcoll,clist1,master_ids,new_ids,'ilp',p)
 
         if len(clist2) > 0:
 
-            pcoll, new_ids = iterate_clist(pcoll,clist2,master_ids,new_ids,'iap')
+            pcoll, new_ids = iterate_clist(pcoll,clist2,master_ids,new_ids,'iap',p)
 
     #cut this down to unique values and earliest time
     if len(new_ids) > 1:
@@ -293,7 +294,7 @@ def get_small_coll(base_dir,dirn,scoll,emb_list,mtiny,p):
     
     return(scoll)
 
-def calc_coll_all(base_dir,fdir,coll,cparam,minemb,nparam,pl_ids=None,cname_min,cname_max):
+def calc_coll_all(base_dir,fdir,coll,cparam,minemb,nparam,cname_min,cname_max,pl_ids=None):
     """Calculating collisional history for planets. Calls find_prev_coll
     Inputs:
     base_dir = directory where runs are
@@ -353,14 +354,16 @@ def calc_coll_all(base_dir,fdir,coll,cparam,minemb,nparam,pl_ids=None,cname_min,
         else:
             maskmp = allplanets['mass'] >= minemb
         planets = allplanets[maskmp]
+        pl_ids = planets['iinit']
 
     elif nparam == 'some':
-        if pl_ids == None:
+        if len(pl_ids) < 0:
+        #if pl_ids == None:
             raise Exception('Error: for plparam == some, you must have a planet id column in dirtable')
             sys.exit(1)
-        planets['iinit'] = pl_ids #should this also have a time component? 
+        #planets['iinit'] = pl_ids #should this also have a time component? 
 
-    for p in planets['iinit']:
+    for p in pl_ids:
 
         #make table for the ids you're searching for
         ids = Table(names=('id','time'))
@@ -412,7 +415,6 @@ def calc_coll_all(base_dir,fdir,coll,cparam,minemb,nparam,pl_ids=None,cname_min,
                 scoll.add_row([p,planets['time'][0],planets['a'][ip],0,p,planets['mtot'][ip],
                     0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,p,'none'])
 
-
     return(pcoll,scoll)
 
 def add_param_cols(dir_tab,scoll):
@@ -424,12 +426,12 @@ def add_param_cols(dir_tab,scoll):
     Outputs: 
     scoll = updated with directory parameters"""
     
-    dirs_c = Column([dir_tab['dirs']]*len(scoll))
+    dir_c = Column([dir_tab['dir']]*len(scoll))
     dloss = Column([dir_tab['dloss']]*len(scoll))
-    ecc = Column([dir_tab['ecc']]*len(scoll))
-    inc = Column([dir_tab['inc']]*len(scoll))
+    ecc = Column([dir_tab['av_ecc']]*len(scoll))
+    inc = Column([dir_tab['av_inc']]*len(scoll))
     slope =Column([dir_tab['slope']]*len(scoll))
-    scoll.add_column(dirs_c,name='dir',index=1)
+    scoll.add_column(dir_c,name='dir',index=1)
     scoll.add_column(dloss,name='dloss',index=2)
     scoll.add_column(ecc,name='ecc',index=3)
     scoll.add_column(inc,name='inc',index=4)
@@ -479,34 +481,33 @@ def get_collhist(base_dir,vtab_name,cparam,minemb,fname,fname_s,ovw,dirparam,plp
                            'float64','int64','float64','float64','int64','int64','float64','float64','int64'))
 
     
+    #read in table of directories and names
+    #do I group both of these tables, or do I just do two separate loops for each one?
+    dir_tab = Table.read(base_dir+dirtable)
+    
     try:
         #read in collision information table
         vtab = Table.read(base_dir+vtab_name)
     except:
         #generate table if it doesn't exist already
         vtab = get_allvel(base_dir,dir_tab,vtab_name,True,folname_min,folname_max)
-        
-    
-    #read in table of directories and names
-    #do I group both of these tables, or do I just do two separate loops for each one?
-    dir_tab = Table.read(base_dir+dirtable)
     
     if plparam == 'some':
         # add in a test to make sure there's an ids column, and exit with error if not?
-        dirgrouped = dir_tab.group_by('dirs')
+        dirgrouped = dir_tab.group_by('dir')
         
     elif dirparam == 'one':
         #only get collhist for one simulation or directory 
         if plparam == 'one':
             #get coll history for one planet 
             pl_ids = [dirtable['iinit'][0]]
-            dmask = vtab['dir'] == dirtable['dirs'][0]
-            pcoll,scoll = calc_coll_all(base_dir,dirtable,vtab[dmask],cparam,minemb,'some',pl_ids,cname_min,cname_max)
+            dmask = vtab['dir'] == dirtable['dir'][0]
+            pcoll,scoll = calc_coll_all(base_dir,dirtable,vtab[dmask],cparam,minemb,'some',cname_min,cname_max,pl_ids)
         elif plparam == 'some':
             #get coll history for pl_ids
             pl_ids = dirtable['iinit']
-            dmask = vtab['dir'] == dirtable['dirs'][0]
-            pcoll,scoll = calc_coll_all(base_dir,dirtable,vtab[dmask],cparam,minemb,'some',pl_ids,cname_min,cname_max)
+            dmask = vtab['dir'] == dirtable['dir'][0]
+            pcoll,scoll = calc_coll_all(base_dir,dirtable,vtab[dmask],cparam,minemb,'some',cname_min,cname_max,pl_ids)
         elif plparam == 'all':
             dmask = vtab['dir'] == dirtable
             pcoll,scoll = calc_coll_all(base_dir,dirtable,vtab[dmask],cparam,minemb,'all',cname_min,cname_max)
@@ -514,8 +515,8 @@ def get_collhist(base_dir,vtab_name,cparam,minemb,fname,fname_s,ovw,dirparam,plp
     if dirparam == 'all':
         for i in range (0,len(dir_tab)):
             #iterate through directories in the table
-            dmask = vtab['dir'] == dir_tab['dirs'][i] #get velocity table for that run
-            pcoll, scoll = calc_coll_all(base_dir,dir_tab['dirs'][i],vtab[dmask],cparam,minemb,'all',cname_min,cname_max)
+            dmask = vtab['dir'] == dir_tab['dir'][i] #get velocity table for that run
+            pcoll, scoll = calc_coll_all(base_dir,dir_tab['dir'][i],vtab[dmask],cparam,minemb,'all',cname_min,cname_max)
             collhist = vstack([collhist,pcoll])
         
             if cparam == 'small' or cparam == 'all':
@@ -525,14 +526,16 @@ def get_collhist(base_dir,vtab_name,cparam,minemb,fname,fname_s,ovw,dirparam,plp
     
     elif dirparam == 'some':
         for key, group in zip(dirgrouped.groups.keys, dirgrouped.groups):
-            dmask = vtab['dir'] == key['dirs']
+            dmask = vtab['dir'] == key['dir']
             if plparam == 'some':
                 #call calc_coll_all for some
                 pl_ids = group['iinit']
-                pcoll, scoll = calc_coll_all(base_dir,key['dirs'],vtab[dmask],cparam,minemb,'some',pl_ids,cname_min,cname_max)
+                pcoll, scoll = calc_coll_all(base_dir,key['dir'],vtab[dmask],cparam,minemb,'some',cname_min,cname_max,pl_ids)
+                collhist = vstack([collhist,pcoll])
             elif plparam == 'one':
                 pl_ids = group['iinit']
-                pcoll, scoll = calc_coll_all(base_dir,key['dirs'],vtab[dmask],cparam,minemb,'some',pl_ids,cname_min,cname_max)
+                pcoll, scoll = calc_coll_all(base_dir,key['dir'],vtab[dmask],cparam,minemb,'some',cname_min,cname_max,pl_ids)
+                collhist = vstack([collhist,pcoll])
                 
             if cparam == 'small' or cparam == 'all':
                 #add columns with init params from dir_tab
