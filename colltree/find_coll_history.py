@@ -64,8 +64,8 @@ def get_allvel(base_dir,dir_tab,fname,ovw,folname_min,folname_max):
 
     #define table
     tot_colls = Table(names=('dir','dloss','ecc','inc','slope','time','a','iac','iap','tmass','CMFt','CMFt_min','il','ilp','pmass','CMFp','CMFp_min','itype','iLR','LRMass','CMFLR','CMFLR_min','iSLR','SLRMass','CMFSLR','CMFSLR_min','inew','ideb','mdeb','id1','id2','ctype','gamma','b','bcrit','vesc','vimp','vescalpha','veros','vcat','vsup','vhr','reveros','revsup'),
-                      dtype=('U100','U12','U12','U12','U12','float64','float64','int32','int32','float64','float64','float64','int32','int32','float64','float64','float64','int32','int32','float64','float64','float64','int32','float64','float64','float64',
-                             'int32','int32','float64','int32','int32','int32','float64','float64','float64','float64','float64','float64','float64','float64','float64','float64','float64','float64'))
+                      dtype=('U100','U12','float64','float64','U12','float64','float64','int32','int32','float64','float64','float64','int32','int32','float64','float64','float64','int32','int32','float64','float64','float64','int32','float64','float64','float64',
+                'int32','int32','float64','int32','int32','int32','float64','float64','float64','float64','float64','float64','float64','float64','float64','float64','float64','float64'))
 
     for i in range (0,len(dir_tab['dir'])):
         colls = get_vel(base_dir,dir_tab['dir'][i],folname_min,folname_max)
@@ -320,7 +320,7 @@ def calc_coll_all(base_dir,fdir,coll,cparam,minemb,nparam,cname_min,cname_max,pl
                          'CMFLR','CMFLR_min','iSLR','SLRMass','CMFSLR','CMFSLR_min','inew','ideb','mdeb',
                          'id1','id2','ctype','gamma','b','bcrit','vesc','vimp','vescalpha','veros','vcat',
                          'vsup','vhr','reveros','revsup'),
-                 dtype=('int64','U100','U12','U12','U12','U12','float64','float64','int64','int64',
+                 dtype=('int64','U100','U12','float64','float64','U12','float64','float64','int64','int64',
                         'float64','float64','float64','int64','int64','float64','float64','float64','int64',
                         'int64','float64','float64','float64','int64','float64','float64','float64','int64',
                         'int64','float64','int64','int64','int64','float64','float64','float64','float64',
@@ -468,7 +468,7 @@ def get_collhist(base_dir,vtab_name,cparam,minemb,fname,fname_s,ovw,dirparam,plp
     collhist = Table(names=('pid','dir','dloss','ecc','inc','slope','time','a','iac','iap','tmass','CMFt','CMFt_min','il','ilp','pmass','CMFp','CMFp_min',
                         'itype','iLR','LRMass','CMFLR','CMFLR_min','iSLR','SLRMass','CMFSLR','CMFSLR_min','inew','ideb','mdeb',
                             'id1','id2','ctype','gamma','b','bcrit','vesc','vimp','vescalpha','veros','vcat','vsup','vhr','reveros','revsup'),
-                    dtype=('int64','U100','U12','U12','U12','U12','float64','float64','int64','int64','float64','float64','float64',
+                    dtype=('int64','U100','U12','float64','float64','U12','float64','float64','int64','int64','float64','float64','float64',
                            'int64','int64','float64','float64','float64','int64','int64','float64','float64','float64','int64','float64','float64','float64','int64',
                            'int64','float64','int64','int64','int64','float64','float64','float64','float64','float64','float64','float64','float64',
                            'float64','float64','float64','float64'))
