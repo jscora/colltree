@@ -177,7 +177,7 @@ def add_collision(new,CollTree,i,collhistg_sorted):
         #see if there's a child for this one
         child_2 = find_children(new['ilp'],new['time'],collhistg_sorted)
 
-        CollTree.loc[i] = [new['time'],name_SLR,new['ilp'],new['SLRMass'],(new['CMFSLR']+new['CMFSLR'])/2,new['a'],new['itype'],[child_2],parents]
+        CollTree.loc[i] = [new['time'],name_SLR,new['ilp'],new['SLRMass'],(new['CMFSLR']+new['CMFSLR_min'])/2,new['a'],new['itype'],[child_2],parents]
         #add to i
         i = i+1
 
