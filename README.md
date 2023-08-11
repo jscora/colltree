@@ -21,7 +21,7 @@ The code is set up so that everything can be run from the Jupyter notebook `inte
 
 ### Important note: Input files
 
-This code reads in Fortran-generated text input files with spaces as dividers. The input files required are based off of the output files generated from the version of SyMBA [(Duncan et al 1998)](https://iopscience.iop.org/article/10.1086/300541/pdf) with imperfect collisions (Scora et al 2020). 
+This code reads in Fortran-generated text input files with spaces as dividers. The input files required are based off of the output files generated from the version of SyMBA [(Duncan et al 1998)](https://iopscience.iop.org/article/10.1086/300541/pdf) with imperfect collisions [(Scora et al 2020)](https://academic.oup.com/mnras/advance-article/doi/10.1093/mnras/staa568/5762783?guestAccessKey=10e0ee18-dd24-4987-bfcd-a76aad9fec12). 
 
 The functions to read in the input files are all in util.py, and can be modified to read in different input files as needed. 
 
