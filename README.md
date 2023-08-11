@@ -4,7 +4,7 @@
 colltree is a package that helps you better visualize the formation histories of planets in N-body simulations with imperfect collisions. It takes output files from the simulation and generates a collision history tree for each planet, then creates an interactive dashboard to display both these individual collision histories and the overall collision statistics from all of the simulated runs. colltree is built to run with the 9 collision types used in SyMBA, but can be altered for codes with different numbers of collision types.
 
 ## Features
-- an interactive dashboard that plots the collision statistics of the final planets in all simulations and will plot out the collision history tree and histogram of any planet once clicked on
+- an interactive dashboard that plots the collision statistics of the final planets in all simulations and will plot out the collision history tree (see [Scora et al. (2022)](https://doi.org/10.3847/1538-4357/ac9cda) for a full description of the collision history plot) and collision histogram of any planet once clicked on
 - creates a .csv table with collision history information for all planets
 - creates a .csv table with some basic statistics on the collisions in each simulation (i.e. numbers of each type of collision)
 - generates a table for each specific planet's collision tree on demand
